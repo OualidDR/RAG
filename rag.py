@@ -3,15 +3,8 @@ from sentence_transformers import SentenceTransformer
 import faiss 
 import numpy as np 
 
-def build_index (vectors):
-    index = faiss.IndexFlatIP(vectors.shape[1])
-    index.add(vectors.astype(np.float32))
-    return index 
-
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
-def embed_texts(texts) :
-    return model.encode(texts, normalize_embeddings = True)
 
 def load_documents(folder) :
     docs = []
@@ -19,6 +12,7 @@ def load_documents(folder) :
         text = path.read_text(encoding= "utf-8")
         docs.append((path.name, text))
     return docs
+
 
 def chunk_text(text, size = 300, overlap = 50 ) :
 
@@ -30,6 +24,22 @@ def chunk_text(text, size = 300, overlap = 50 ) :
         start += size - overlap 
     return chunks 
 
+def embed_texts(texts) :
+    return model.encode(texts, normalize_embeddings = True)
+
+def build_index (vectors):
+    index = faiss.IndexFlatIP(vectors.shape[1])
+    index.add(vectors.astype(np.float32))
+    return index 
+
+
+def retrieve(question, index, chunks, k = 2) :
+    q  = embed_texts([question]).astype(np.float32)
+    scores, ids = index.search(q,k)
+    results = []
+    for score, i in zip(scores[0], ids[0]) :
+        results.append({"text": chunks[i], "score": float(score)})
+    return results
 
 if __name__ == "__main__":
     docs = load_documents("docs")
@@ -38,16 +48,14 @@ if __name__ == "__main__":
         all_chunks.extend(chunk_text(text))
 
     vectors = embed_texts(all_chunks)
-    print("chunks:", len(all_chunks))
-    print("vectors shape:", vectors.shape)
-    print("first 5 numbers of vector 0:", vectors[0][:5])
-    a, b, c = embed_texts([
-        "How many vacation days do I get?",
-        "Every full-time employee receives 18 days of paid vacation per year.",
-        "The fire extinguisher is located behind the counter.",
-    ])
-    print("question vs vacation sentence:", a @ b)
-    print("question vs fire sentence:    ", a @ c)
+    index = build_index(vectors)
+
+    print("vectors in index:", index.ntotal)
+    print("dimension:", index.d)
+
+    scores, ids = index.search(vectors[0:1], 3)
+    print("scores:", scores)
+    print("ids:", ids)
 
    
 
