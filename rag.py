@@ -2,6 +2,8 @@ from pathlib import Path
 from sentence_transformers import SentenceTransformer
 import faiss 
 import numpy as np 
+from groq import Groq
+
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
@@ -41,6 +43,27 @@ def retrieve(question, index, chunks, k = 2) :
         results.append({"text": chunks[i], "score": float(score)})
     return results
 
+def generate_answer(question, results):
+    context = "\n\n".join(
+        f"[{i+1}] {r['text']}" for i, r in enumerate(results)
+    )
+
+    system = (
+        "You answer questions using ONLY the context provided. "
+        "If the answer is not in the context, say you don't know. "
+        "Cite sources like [1]."
+
+    )
+    client = Groq()
+    response = client.chat.completions.create(
+    model="openai/gpt-oss-20b",
+    messages=[
+        {"role": "system", "content": system},
+            {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"},
+        ],
+    )
+    return response.choices[0].message.content
+
 if __name__ == "__main__":
     docs = load_documents("docs")
     all_chunks = []
@@ -50,12 +73,11 @@ if __name__ == "__main__":
     vectors = embed_texts(all_chunks)
     index = build_index(vectors)
 
-    print("vectors in index:", index.ntotal)
-    print("dimension:", index.d)
+    question = "What is the capital of France?"
+    results = retrieve(question, index, all_chunks, k=2)
+    answer = generate_answer(question, results)
+    print("ANSWER:", answer)
 
-    scores, ids = index.search(vectors[0:1], 3)
-    print("scores:", scores)
-    print("ids:", ids)
 
    
 
