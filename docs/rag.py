@@ -1,6 +1,12 @@
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
+import faiss 
+import numpy as np 
 
+def build_index (vectors):
+    index = faiss.IndexFlatIP(vectors.shape[1])
+    index.add(vectors.astype(np.float32))
+    return index 
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
