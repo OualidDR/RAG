@@ -19,7 +19,7 @@ if question :
     with st.expander("retrieved chunks") :
         for r in results :
             st.write(f"score: {r['score']:.2f}")
-            st.write(r["text"])
+            st.text(r["text"])
             
 
 

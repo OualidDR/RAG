@@ -3,6 +3,9 @@ from sentence_transformers import SentenceTransformer
 import faiss 
 import numpy as np 
 from groq import Groq
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
