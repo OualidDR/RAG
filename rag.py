@@ -43,6 +43,15 @@ def retrieve(question, index, chunks, k = 2) :
         results.append({"text": chunks[i], "score": float(score)})
     return results
 
+def build_pipeline(folder="docs"):
+    all_chunks = []
+    for name, text in load_documents(folder):
+        all_chunks.extend(chunk_text(text))
+    vectors = embed_texts(all_chunks)
+    index = build_index(vectors)
+    return index, all_chunks
+
+
 def generate_answer(question, results):
     context = "\n\n".join(
         f"[{i+1}] {r['text']}" for i, r in enumerate(results)
