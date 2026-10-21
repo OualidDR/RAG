@@ -1,68 +1,22 @@
-import streamlit as st 
-from rag import build_pipeline, retrieve, generate_answer
+import streamlit as st
+from answer import answer
 
-st.title("RAG")
+st.title("Assistant ENSIAS")
+st.caption("Réponses basées sur les documents officiels de l'ENSIAS")
 
-@st.cache_resource
+question = st.chat_input("Pose ta question / Ask your question")
 
-def load_pipeline():
-    return build_pipeline("docs")
-
-index, chunks = load_pipeline()
-
-question = st.text_input("Ask a question about your documents !")
-
-if question :
-    results = retrieve(question, index, chunks, k = 2 )
-    answer = generate_answer(question, results)
-    st.write(answer)
-    with st.expander("retrieved chunks") :
-        for r in results :
-            st.write(f"score: {r['score']:.2f}")
-            st.text(r["text"])
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if question:
+    with st.chat_message("user"):
+        st.write(question)
+    with st.chat_message("assistant"):
+        with st.spinner("Recherche..."):
+            text, hits = answer(question)
+        st.write(text)
+        if hits:
+            with st.expander("Sources"):
+                for i, h in enumerate(hits, 1):
+                    m = h["meta"]
+                    title = m["article"] or m["section"] or m["chapter"]
+                    st.markdown(f"**[{i}] {title}**, page {m['page']} (score {h['score']:.2f})")
+                    st.text(h["text"])
